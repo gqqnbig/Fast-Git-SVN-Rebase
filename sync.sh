@@ -1,3 +1,5 @@
+git config --local gc.auto 0
+
 git checkout trunk
 git pull origin trunk master
 
@@ -17,3 +19,9 @@ git merge master
 git checkout master
 
 git push --force-with-lease=master  origin master trunk
+if [ $? -ne 0 ]; then
+	>&2 echo "Do you have the rewind permission on $(git remote get-url origin)?"
+	exit
+fi
+
+git gc --auto

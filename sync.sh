@@ -1,14 +1,19 @@
+git checkout trunk
+git pull origin trunk master
+
+if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
+	>&2 echo "trunk doesn't align with git-svn!"
+	exit
+fi
+
 git checkout master
-git pull origin master
 
-git checkout unsync
+git svn dcommit --add-author-from
 
-git svn dcommit
+git checkout trunk
+
+git merge master
 
 git checkout master
 
-git merge unsync
-
-git checkout unsync
-
-git push --force-with-lease=unsync  origin master unsync
+git push --force-with-lease=master  origin master trunk

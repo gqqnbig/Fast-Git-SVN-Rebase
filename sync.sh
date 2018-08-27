@@ -1,15 +1,16 @@
 git config --local gc.auto 0
 
 git checkout trunk
-git pull origin trunk master
+git pull origin trunk
+git checkout master
+git pull origin master
 
 if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 	>&2 echo "trunk doesn't align with git-svn!"
 	exit 1
 fi
 
-git checkout master
-
+git svn rebase
 git svn dcommit --add-author-from
 
 git checkout trunk

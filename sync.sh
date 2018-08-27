@@ -5,7 +5,7 @@ git pull origin trunk master
 
 if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 	>&2 echo "trunk doesn't align with git-svn!"
-	exit
+	exit 1
 fi
 
 git checkout master
@@ -21,7 +21,7 @@ git checkout master
 git push --force-with-lease=master  origin master trunk
 if [ $? -ne 0 ]; then
 	>&2 echo "Do you have the rewind permission on $(git remote get-url origin)?"
-	exit
+	exit 2
 fi
 
 git gc --auto

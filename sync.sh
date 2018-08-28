@@ -14,8 +14,8 @@ if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 	exit 1
 fi
 
-git svn rebase
-git svn dcommit --add-author-from
+git svn rebase || exit 1
+git svn dcommit --add-author-from || exit 1
 
 git checkout trunk
 

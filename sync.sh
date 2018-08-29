@@ -1,5 +1,14 @@
 git config --local gc.auto 0
 
+# The output of whoami may prefix with domain name.
+# The EndsWith syntax is found at http://tldp.org/LDP/abs/html/comparison-ops.html
+if [[ "$(whoami)" != *git2svn ]]; then
+	>&2 echo -e "\e[93mThe current user is not git2svn, all commits from Git will be committed as $(whoami) to SVN!\e[0m"
+	# https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html
+	# Words of the form $'string' are treated specially. The word expands to string, with backslash-escaped characters replaced as specified by the ANSI C standard. Backslash escape sequences, if present, are decoded as follows...
+	read -p $'I will continue in 5 seconds or you press any key to continue immediately.\n' -t 5 -n 1 -s
+fi
+
 git checkout trunk
 git pull origin trunk
 git checkout master

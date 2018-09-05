@@ -24,7 +24,12 @@ if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 	>&2 echo -e "\e[93mtrunk doesn't align with git-svn!\e[0m"
 
 	if git merge-base --is-ancestor git-svn trunk; then
-		echo "git-svn is ancestor of trunk. Reset to git-svn."
+		echo "git-svn is behind of trunk. Reset trunk to git-svn."
+		# current branch is master, so I can directly move the pointer of trunk.
+		git branch -f trunk git-svn || exit 1
+		git push --force-with-lease origin trunk || exit 1
+	elif git merge-base --is-ancestor trunk git-svn; then
+		echo "git-svn is ahead of trunk. Reset trunk to git-svn."
 		# current branch is master, so I can directly move the pointer of trunk.
 		git branch -f trunk git-svn || exit 1
 		git push --force-with-lease origin trunk || exit 1

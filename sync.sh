@@ -16,6 +16,7 @@ git pull --ff-only origin master
 if [ $? -ne 0 ]; then
 	>&2 echo -e "\e[31mBranch master diverges from origin/master. Please fix manully.\e[0m"
 	>&2 echo -e "\e[31mYou may want to reset master to orgin/master.\e[0m"
+	read -n 1 -s -r -p "Press any key to continue"
 	exit 4
 fi
 
@@ -29,12 +30,22 @@ if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 		git push --force-with-lease origin trunk || exit 1
 	else
 		>&2 echo "git-svn is not ancestor of trunk."
+		read -n 1 -s -r -p "Press any key to continue"
 		exit 1
 	fi
 fi
 
-git svn rebase --use-log-author || exit 1
-git svn dcommit --add-author-from --use-log-author || exit 1
+git svn rebase --use-log-author
+if [ $? -ne 0 ]; then
+	read -n 1 -s -r -p $'\e[31mSee above error.\e[0m Press any key to continue'
+	exit 3
+fi
+
+git svn dcommit --add-author-from --use-log-author 
+if [ $? -ne 0 ]; then
+	read -n 1 -s -r -p $'\e[31mSee above error.\e[0m Press any key to continue'
+	exit 4
+fi
 
 git checkout trunk
 
@@ -45,6 +56,7 @@ git checkout master
 git push --force-with-lease=master  origin master trunk
 if [ $? -ne 0 ]; then
 	>&2 echo "Do you have the rewind permission on $(git remote get-url origin)?"
+	read -n 1 -s -r -p "Press any key to continue"
 	exit 2
 fi
 

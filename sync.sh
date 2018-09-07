@@ -9,10 +9,14 @@ if [[ "$(whoami)" != *git2svn ]]; then
 	read -p $'I will continue in 5 seconds or you press any key to continue immediately.\n' -t 5 -n 1 -s
 fi
 
+# update trunk 
 git checkout trunk
 git pull origin trunk
+
+# update master 
 git checkout master
 git pull --ff-only origin master
+
 if [ $? -ne 0 ]; then
 	>&2 echo -e "\e[31mBranch master diverges from origin/master. Please fix manully.\e[0m"
 	>&2 echo -e "\e[31mYou may want to reset master to orgin/master.\e[0m"
@@ -20,6 +24,7 @@ if [ $? -ne 0 ]; then
 	exit 4
 fi
 
+#sanity check to make sure trunk aligns with git-svn label 
 if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 	>&2 echo -e "\e[93mtrunk doesn't align with git-svn!\e[0m"
 
@@ -40,25 +45,30 @@ if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 	fi
 fi
 
+# pull changes from SVN to GIT
 git svn rebase --use-log-author
 if [ $? -ne 0 ]; then
 	read -n 1 -s -r -p $'\e[31mSee above error.\e[0m Press any key to continue'
 	exit 3
 fi
 
+# push changes from git to svn
 git svn dcommit --add-author-from --use-log-author 
 if [ $? -ne 0 ]; then
 	read -n 1 -s -r -p $'\e[31mSee above error.\e[0m Press any key to continue'
 	exit 4
 fi
 
+# align trunk to master (fast forward) 
 git checkout trunk
-
 git merge master
 
+# push trunk and master back to origin;  the force with lease is to handle 
+# the new svn metadata (from synching hash of svn revision) and force git to take change
 git checkout master
-
 git push --force-with-lease=master  origin master trunk
+
+# error checkin
 if [ $? -ne 0 ]; then
 	>&2 echo "Do you have the rewind permission on $(git remote get-url origin)?"
 	read -n 1 -s -r -p "Press any key to continue"

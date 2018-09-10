@@ -1,3 +1,10 @@
+# `git svn info` may hang up, so I have to use grep.
+grep svn-remote .git/config >/dev/null
+if [ $? -ne 0 ]; then
+	>&2 echo -e "\e[31mThis is not a git-svn repository. You have to run \`git svn init ...\`.\e[0m"
+	exit 5
+fi
+
 git config --local gc.auto 0
 
 # The output of whoami may prefix with domain name.

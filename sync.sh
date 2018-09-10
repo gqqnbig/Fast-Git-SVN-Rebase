@@ -46,7 +46,7 @@ if [ "$(git rev-list -1 trunk)" != "$(git rev-list -1 git-svn)" ]; then
 		git branch -f trunk git-svn || exit 1
 		git push --force-with-lease origin trunk || exit 1
 	else
-		>&2 echo "git-svn is not ancestor of trunk."
+		>&2 echo "git-svn diverges from trunk."
 		read -n 1 -s -r -p "Press any key to exit"
 		exit 1
 	fi

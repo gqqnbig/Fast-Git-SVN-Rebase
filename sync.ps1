@@ -173,14 +173,14 @@ catch
 git gc --auto
 
 # Remove old backups
-if($backupFiles.Length -gt 10)
+if($backupFiles.Length -gt 9)
 {
-	$toDelete=$backupFiles.Length - 2
+	$toDelete=$backupFiles.Length - 9
 	echo "Delete $toDelete folders"
 	for($i=0; $i -lt $toDelete; $i++)
 	{
 		echo  "Delete $($backupFiles[$i].FullName)"
-		rm -rf "$($backupFiles[$i].FullName)"
+		Remove-Item "$($backupFiles[$i].FullName)" -Recurse
 	}
 }
 

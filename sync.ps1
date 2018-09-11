@@ -1,3 +1,19 @@
+function Get-LatestSvnRevision([string]$filePath)
+{
+    if((Test-Path $filePath -PathType Leaf) -eq $false)
+    {
+        return 0
+    }
+	$bytes = [System.IO.File]::ReadAllBytes($filePath)
+    $versionBytes = $bytes[-24..-21]
+    if([BitConverter]::IsLittleEndian)
+    {
+        [Array]::Reverse($versionBytes);
+    }
+    $revisionNumber= [bitconverter]::ToInt32($versionBytes,0)
+    return $revisionNumber
+}
+
 function TimedPrompt([string]$prompt, [int]$secondsToWait){   
     Write-Host -NoNewline $prompt
     $secondsCounter = 0
@@ -28,6 +44,8 @@ $ErrorActionPreference = "Stop"
 if([String]::IsNullOrWhitespace($(Select-String svn-remote .git/config)))
 {
     Write-Host "This is not a git-svn repository. You have to run ``git svn init ...``." -ForegroundColor Red
+	Write-Host -NoNewLine "Press any key to exit"
+	$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
 	exit 5
 }
 
@@ -47,11 +65,36 @@ try
 }
 catch
 {
-    Write-Error "Branch master diverges from origin/master. Please fix manully."
-	Write-Error "You may want to reset master to orgin/master."
+	Write-Host "Branch master diverges from origin/master. Please fix manully." -ForegroundColor Red
+	Write-Host "You may want to reset master to orgin/master." -ForegroundColor Red
 	Write-Host -NoNewLine "Press any key to exit"
     $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
 	exit 4
+}
+
+$svnMetadataFolder="\\CYBERTRON\loanspq\git\svn metadata\LoansPQ2-Git-SVN"
+$backupFiles = Get-ChildItem -Directory $svnMetadataFolder | Sort-Object -Property LastWriteTime
+# Index 0 is the oldest backup.
+$sharedRev=Get-LatestSvnRevision("$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275")
+$myRev=Get-LatestSvnRevision('.git\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275')
+
+Write-Verbose "sharedRev: $sharedRev"
+Write-Verbose "myRev: $myRev"
+
+if( $sharedRev -gt $myRev)
+{
+    Write-Host -NoNewline  "Shared rev map (r$sharedRev) is newer than local revision (r$myRev). Using the shared one... " -ForegroundColor Green
+
+    # $null = ... swallows output
+	if((Test-Path '.git\svn\refs\remotes\git-svn\' -PathType Container) -eq $false)
+	{ $null = mkdir '.git\svn\refs\remotes\git-svn\' -ErrorAction SilentlyContinue }
+	cp "$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\*" '.git\svn\refs\remotes\git-svn\'
+
+	if((Test-Path '.git\refs\remotes\' -PathType Container) -eq $false)
+	{ $null = mkdir '.git\refs\remotes\' -ErrorAction SilentlyContinue }
+	cp "$($backupFiles[-1].FullName)\refs\remotes\git-svn" '.git\refs\remotes\'
+
+	Write-Host "OK" -ForegroundColor Green
 }
 
 #sanity check to make sure trunk aligns with git-svn label 
@@ -128,3 +171,26 @@ catch
 }
 
 git gc --auto
+
+# Remove old backups
+if($backupFiles.Length -gt 10)
+{
+	$toDelete=$backupFiles.Length - 2
+	echo "Delete $toDelete folders"
+	for($i=0; $i -lt $toDelete; $i++)
+	{
+		echo  "Delete $($backupFiles[$i].FullName)"
+		rm -rf "$($backupFiles[$i].FullName)"
+	}
+}
+
+
+$newFolder="$svnMetadataFolder\$([DateTime]::Now.ToString("yyyyMMdd-HHmmss")).git"
+# Copy the database file
+$null = mkdir "$newFolder\svn\refs\remotes\git-svn\" 
+cp ".git\svn\refs\remotes\git-svn\*" "$newFolder\svn\refs\remotes\git-svn\"
+
+# Copy the git-svn pointer
+$null = mkdir "$newFolder\refs\remotes\"
+cp '.git\refs\remotes\git-svn' "$newFolder\refs\remotes\"
+

@@ -154,6 +154,7 @@ $p.Start() | Out-Null
 $p.WaitForExit()
 if($p.ExitCode -ne 0)
 {
+    Write-Host $($p.StandardError.ReadToEnd()) -ForegroundColor Red
     exit $p.ExitCode
 }
 

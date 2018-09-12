@@ -49,6 +49,13 @@ if([String]::IsNullOrWhitespace($(Select-String svn-remote .git/config)))
 	exit 5
 }
 
+if([String]::IsNullOrEmpty($args[0]))
+{
+    Write-Host "Password is missing." -ForegroundColor Red
+    Write-Host "Call the script like"
+    Write-Host "`t$(Split-Path -leaf $PSCommandpath) password123"
+    exit 6
+}
 
 git config --local gc.auto 0
 

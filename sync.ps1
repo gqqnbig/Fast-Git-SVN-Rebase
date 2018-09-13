@@ -125,7 +125,7 @@ if($(git rev-list -1 trunk) -ne $(git rev-list -1 git-svn))
 		# current branch is master, so I can directly move the pointer of trunk.
         # may not need to do anything
 		git branch -f trunk git-svn
-		git push --force-with-lease origin trunk 
+		git push origin trunk 
     }
 	else
     {

@@ -58,6 +58,9 @@ if([String]::IsNullOrEmpty($args[0]))
 }
 
 git config --local gc.auto 0
+git config --local svn.addAuthorFrom true
+git config --local svn.useLogAuthor true
+
 
 # update trunk 
 git checkout trunk
@@ -134,14 +137,14 @@ if($(git rev-list -1 trunk) -ne $(git rev-list -1 git-svn))
 }
 
 # pull changes from SVN to GIT
-git svn rebase --use-log-author
+git svn rebase
 
 $password = $args[0] | ConvertTo-SecureString -asPlainText -Force
 
 # run `git svn dcommit` as the git2svn user.
 $pinfo = New-Object System.Diagnostics.ProcessStartInfo
 $pinfo.FileName = "git"
-$pinfo.Arguments =  'svn dcommit  --add-author-from --use-log-author'
+$pinfo.Arguments =  'svn dcommit'
 $pinfo.RedirectStandardError = $true; $pinfo.RedirectStandardOutput = $true; $pinfo.UseShellExecute = $false
 $pinfo.Domain = "."; $pinfo.UserName="git2svn"; $pinfo.Password = $password
 # The WorkingDirectory property must be set if UserName and Password are provided. https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.username

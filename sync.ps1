@@ -111,14 +111,14 @@ if($(git rev-list -1 trunk) -ne $(git rev-list -1 git-svn))
 
 	if($(git merge-base --is-ancestor git-svn trunk;$?))
     {
-		echo "git-svn is behind of trunk. Reset trunk to git-svn."
+		echo "trunk is ahead of git-svn. Reset trunk to git-svn."
 		# current branch is master, so I can directly move the pointer of trunk.
 		git branch -f trunk git-svn
 		git push --force-with-lease origin trunk
     }
 	elseif ($(git merge-base --is-ancestor trunk git-svn;$?))
     {
-		echo "git-svn is ahead of trunk. Reset trunk to git-svn."
+		echo "trunk is behind git-svn. Fast-forward trunk to git-svn."
 		# current branch is master, so I can directly move the pointer of trunk.
         # may not need to do anything
 		git branch -f trunk git-svn

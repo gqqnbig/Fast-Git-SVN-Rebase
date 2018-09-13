@@ -83,7 +83,7 @@ catch
 }
 
 $svnMetadataFolder="\\CYBERTRON\loanspq\git\svn metadata\LoansPQ2-Git-SVN"
-$backupFiles = Get-ChildItem -Directory $svnMetadataFolder | Sort-Object -Property LastWriteTime
+$backupFiles = Get-ChildItem -Directory "$svnMetadataFolder\*.git" | Sort-Object -Property LastWriteTime
 # Index 0 is the oldest backup.
 $sharedRev=Get-LatestSvnRevision("$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275")
 $myRev=Get-LatestSvnRevision('.git\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275')

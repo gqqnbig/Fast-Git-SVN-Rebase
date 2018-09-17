@@ -84,27 +84,30 @@ catch
 
 $svnMetadataFolder="\\CYBERTRON\loanspq\git\svn metadata\LoansPQ2-Git-SVN"
 $backupFiles = Get-ChildItem -Directory "$svnMetadataFolder\*.git" | Sort-Object -Property LastWriteTime
-# Index 0 is the oldest backup.
-$sharedRev=Get-LatestSvnRevision("$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275")
-$myRev=Get-LatestSvnRevision('.git\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275')
-
-Write-Verbose "sharedRev: $sharedRev"
-Write-Verbose "myRev: $myRev"
-
-if( $sharedRev -gt $myRev)
+if($backupFiles.Length -gt 0)
 {
-    Write-Host -NoNewline  "Shared rev map (r$sharedRev) is newer than local revision (r$myRev). Using the shared one... " -ForegroundColor Green
+	# Index 0 is the oldest backup.
+	$sharedRev=Get-LatestSvnRevision("$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275")
+	$myRev=Get-LatestSvnRevision('.git\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275')
 
-    # $null = ... swallows output
-	if((Test-Path '.git\svn\refs\remotes\git-svn\' -PathType Container) -eq $false)
-	{ $null = mkdir '.git\svn\refs\remotes\git-svn\' -ErrorAction SilentlyContinue }
-	cp "$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\*" '.git\svn\refs\remotes\git-svn\'
+	Write-Verbose "sharedRev: $sharedRev"
+	Write-Verbose "myRev: $myRev"
 
-	if((Test-Path '.git\refs\remotes\' -PathType Container) -eq $false)
-	{ $null = mkdir '.git\refs\remotes\' -ErrorAction SilentlyContinue }
-	cp "$($backupFiles[-1].FullName)\refs\remotes\git-svn" '.git\refs\remotes\'
+	if( $sharedRev -gt $myRev)
+	{
+		Write-Host -NoNewline  "Shared rev map (r$sharedRev) is newer than local revision (r$myRev). Using the shared one... " -ForegroundColor Green
 
-	Write-Host "OK" -ForegroundColor Green
+		# $null = ... swallows output
+		if((Test-Path '.git\svn\refs\remotes\git-svn\' -PathType Container) -eq $false)
+		{ $null = mkdir '.git\svn\refs\remotes\git-svn\' -ErrorAction SilentlyContinue }
+		cp "$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\*" '.git\svn\refs\remotes\git-svn\'
+
+		if((Test-Path '.git\refs\remotes\' -PathType Container) -eq $false)
+		{ $null = mkdir '.git\refs\remotes\' -ErrorAction SilentlyContinue }
+		cp "$($backupFiles[-1].FullName)\refs\remotes\git-svn" '.git\refs\remotes\'
+
+		Write-Host "OK" -ForegroundColor Green
+	}
 }
 
 #sanity check to make sure trunk aligns with git-svn label 

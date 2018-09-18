@@ -4,14 +4,32 @@ function Get-LatestSvnRevision([string]$filePath)
     {
         return 0
     }
+
 	$bytes = [System.IO.File]::ReadAllBytes($filePath)
-    $versionBytes = $bytes[-24..-21]
-    if([BitConverter]::IsLittleEndian)
-    {
-        [Array]::Reverse($versionBytes);
+	for($iteration = 0;$iteration -lt 3;$iteration++)
+	{
+		$versionBytes = $bytes[(-24-$iteration*24) .. (-21-$iteration*24)]
+		if([BitConverter]::IsLittleEndian)
+		{
+			[Array]::Reverse($versionBytes);
+		}
+
+		$key = [bitconverter]::ToInt32($versionBytes,0)
+
+		$shaBytes= $bytes[(-20-$iteration*24) .. (-1-$iteration*24)]
+
+		if([Linq.Enumerable]::Any($shaBytes, [Func[object,bool]]{ param($x) $x -gt 0 }))
+		{
+		    $value = [bitconverter]::ToString($shaBytes).Replace("-","").ToLower()
+		    $kv = New-Object 'System.Collections.Generic.KeyValuePair[Int,String]' -ArgumentList ($key,$value)
+		    return $kv
+		}
+		else
+		{
+			Write-Warning "The SHA1 of r$key from $filePath is empty. Reading previous revision..."
+		}
     }
-    $revisionNumber= [bitconverter]::ToInt32($versionBytes,0)
-    return $revisionNumber
+    Write-Error "rev map has too many empty records."
 }
 
 $ErrorActionPreference = "Stop"
@@ -70,9 +88,10 @@ if($backupFiles.Length -gt 0)
 	Write-Verbose "sharedRev: $sharedRev"
 	Write-Verbose "myRev: $myRev"
 
-	if( $sharedRev -gt $myRev)
+	if( $sharedRev.Key -gt $myRev.Key)
 	{
-		Write-Host -NoNewline  "Shared rev map (r$sharedRev) is newer than local revision (r$myRev). Using the shared one... " -ForegroundColor Green
+
+		Write-Host -NoNewline  "Shared rev map (r$($sharedRev.Key)) is newer than local revision (r$($myRev.Key)). Using the shared one... " -ForegroundColor Green
 
 		# $null = ... swallows output
 		if((Test-Path '.git\svn\refs\remotes\git-svn\' -PathType Container) -eq $false)

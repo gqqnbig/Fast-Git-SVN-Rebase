@@ -14,29 +14,6 @@ function Get-LatestSvnRevision([string]$filePath)
     return $revisionNumber
 }
 
-function TimedPrompt([string]$prompt, [int]$secondsToWait){   
-    Write-Host -NoNewline $prompt
-    $secondsCounter = 0
-    $subCounter = 0
-    While ( (!$host.ui.rawui.KeyAvailable) -and ($count -lt $secondsToWait) ){
-        start-sleep -m 10
-        $subCounter = $subCounter + 10
-        if($subCounter -eq 1000)
-        {
-            $secondsCounter++
-            $subCounter = 0
-            Write-Host -NoNewline "."
-        }       
-        If ($secondsCounter -eq $secondsToWait) { 
-            Write-Host "`r`n"
-            return $false;
-        }
-    }
-    Write-Host "`r`n"
-    $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    return $true;
-}
-
 $ErrorActionPreference = "Stop"
 [System.IO.Directory]::SetCurrentDirectory($PWD)
 

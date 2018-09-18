@@ -32,6 +32,30 @@ function Get-LatestSvnRevision([string]$filePath)
     Write-Error "rev map has too many empty records."
 }
 
+function Is-ShaInRevMap([string]$sha, [string]$filePath)
+{
+	$bytes = [System.IO.File]::ReadAllBytes($filePath)
+	for($iteration = 0; ($iteration+1)*24 -lt $bytes.Length ; $iteration++)
+	{
+		$versionBytes = $bytes[(-24-$iteration*24) .. (-21-$iteration*24)]
+		if([BitConverter]::IsLittleEndian)
+		{
+			[Array]::Reverse($versionBytes);
+		}
+
+		$key = [bitconverter]::ToInt32($versionBytes,0)
+
+		$shaBytes= $bytes[(-20-$iteration*24) .. (-1-$iteration*24)]
+		$value = [bitconverter]::ToString($shaBytes).Replace("-","")
+		if($value -ieq $sha)
+		{
+			return $true
+		}
+	}
+	return $false
+}
+
+
 $ErrorActionPreference = "Stop"
 [System.IO.Directory]::SetCurrentDirectory($PWD)
 
@@ -79,6 +103,7 @@ catch
 
 $svnMetadataFolder="\\CYBERTRON\loanspq\git\svn metadata\LoansPQ2-Git-SVN"
 $backupFiles = Get-ChildItem -Directory "$svnMetadataFolder\*.git" | Sort-Object -Property LastWriteTime
+$shareBackRevMap = $true
 if($backupFiles.Length -gt 0)
 {
 	# Index 0 is the oldest backup.
@@ -90,19 +115,27 @@ if($backupFiles.Length -gt 0)
 
 	if( $sharedRev.Key -gt $myRev.Key)
 	{
+		if((Is-ShaInRevMap $myRev.Value "$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\.rev_map.b750ebf6-c7df-ed4a-bdf3-f739ba673275") -eq $false)
+		{
+			Write-Warning "Shared revision map is not a fast-forward of your local copy."
+			Write-Warning "I will use your local copy, and will not share revision map back."
+			$shareBackRevMap=$false
+		}
+		else
+		{
+			Write-Host -NoNewline  "Shared rev map (r$($sharedRev.Key)) is a fast-forward of your local revision (r$($myRev.Key)). Using the shared one... " -ForegroundColor Green
 
-		Write-Host -NoNewline  "Shared rev map (r$($sharedRev.Key)) is newer than local revision (r$($myRev.Key)). Using the shared one... " -ForegroundColor Green
+			# $null = ... swallows output
+			if((Test-Path '.git\svn\refs\remotes\git-svn\' -PathType Container) -eq $false)
+			{ $null = mkdir '.git\svn\refs\remotes\git-svn\' -ErrorAction SilentlyContinue }
+			cp "$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\*" '.git\svn\refs\remotes\git-svn\'
 
-		# $null = ... swallows output
-		if((Test-Path '.git\svn\refs\remotes\git-svn\' -PathType Container) -eq $false)
-		{ $null = mkdir '.git\svn\refs\remotes\git-svn\' -ErrorAction SilentlyContinue }
-		cp "$($backupFiles[-1].FullName)\svn\refs\remotes\git-svn\*" '.git\svn\refs\remotes\git-svn\'
+			if((Test-Path '.git\refs\remotes\' -PathType Container) -eq $false)
+			{ $null = mkdir '.git\refs\remotes\' -ErrorAction SilentlyContinue }
+			cp "$($backupFiles[-1].FullName)\refs\remotes\git-svn" '.git\refs\remotes\'
 
-		if((Test-Path '.git\refs\remotes\' -PathType Container) -eq $false)
-		{ $null = mkdir '.git\refs\remotes\' -ErrorAction SilentlyContinue }
-		cp "$($backupFiles[-1].FullName)\refs\remotes\git-svn" '.git\refs\remotes\'
-
-		Write-Host "OK" -ForegroundColor Green
+			Write-Host "OK" -ForegroundColor Green
+        	}
 	}
 }
 
@@ -182,25 +215,27 @@ catch
 
 git gc --auto
 
-# Remove old backups
-if($backupFiles.Length -gt 9)
+if($shareBackRevMap)
 {
-	$toDelete=$backupFiles.Length - 9
-	echo "Delete $toDelete folders"
-	for($i=0; $i -lt $toDelete; $i++)
+	# Remove old backups
+	if($backupFiles.Length -gt 9)
 	{
-		echo  "Delete $($backupFiles[$i].FullName)"
-		Remove-Item "$($backupFiles[$i].FullName)" -Recurse
+		$toDelete=$backupFiles.Length - 9
+		echo "Delete $toDelete folders"
+		for($i=0; $i -lt $toDelete; $i++)
+		{
+			echo  "Delete $($backupFiles[$i].FullName)"
+			Remove-Item "$($backupFiles[$i].FullName)" -Recurse
+		}
 	}
+
+
+	$newFolder="$svnMetadataFolder\$([DateTime]::Now.ToString("yyyyMMdd-HHmmss")).git"
+	# Copy the database file
+	$null = mkdir "$newFolder\svn\refs\remotes\git-svn\" 
+	cp ".git\svn\refs\remotes\git-svn\*" "$newFolder\svn\refs\remotes\git-svn\"
+
+	# Copy the git-svn pointer
+	$null = mkdir "$newFolder\refs\remotes\"
+	cp '.git\refs\remotes\git-svn' "$newFolder\refs\remotes\"
 }
-
-
-$newFolder="$svnMetadataFolder\$([DateTime]::Now.ToString("yyyyMMdd-HHmmss")).git"
-# Copy the database file
-$null = mkdir "$newFolder\svn\refs\remotes\git-svn\" 
-cp ".git\svn\refs\remotes\git-svn\*" "$newFolder\svn\refs\remotes\git-svn\"
-
-# Copy the git-svn pointer
-$null = mkdir "$newFolder\refs\remotes\"
-cp '.git\refs\remotes\git-svn' "$newFolder\refs\remotes\"
-

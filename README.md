@@ -13,7 +13,7 @@ Switch user to git2svn, do necessary Git configuration, and make sure you can ma
 
 Switch user back to your regular user. Create a task in Windows Task Scheduler. In Security options, use your regular user account, and <u>Run only when user is logged on</u>. Only run the script on weekdays becauser we assume no developers will come to work at weekends.
 
-<img src="/raw/Tools/GitToSvn.git/master/docs!Task%20Scheduler%20General.png" alt="Task Scheduler General tab" width="80%"/>
+![Task Scheduler General tab](/docs/Task%20Scheduler%20General.png)
 
 The synchronziation script doesn't require user input and outputs warnings and errors in case something is wrong. As the script is experimental, I don't recommend to use option <u>Run whether user is logged on or not</u> because it prevents Windows from showing the script window even if the user is logged on<sup>[1]</sup>.
 
